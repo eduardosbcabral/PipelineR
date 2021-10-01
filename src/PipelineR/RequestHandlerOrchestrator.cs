@@ -17,12 +17,11 @@ namespace PipelineR
             requestHandler.Context.CurrentRequestHandleId = requestHandler.RequestHandleId();
 
             if (UseRequestHandlerId(requestHandlerId) &&
-                requestHandler.Context.CurrentRequestHandleId.Equals(requestHandlerId, System.StringComparison.InvariantCultureIgnoreCase) == false)
+                requestHandler.Context.CurrentRequestHandleId.Equals(requestHandlerId, StringComparison.InvariantCultureIgnoreCase) == false)
             {
-                
                 if(requestHandler.RecoveryRequestHandler != null)
                 {
-                    var recoveryRequestHandler = ((RecoveryHandler<TContext, TRequest>)requestHandler.RecoveryRequestHandler);
+                    var recoveryRequestHandler = requestHandler.RecoveryRequestHandler;
                     if (recoveryRequestHandler.Condition != null)
                     {
                         if(recoveryRequestHandler.Condition.IsSatisfied(recoveryRequestHandler.Context, request))
@@ -35,7 +34,10 @@ namespace PipelineR
                         result = recoveryRequestHandler.Execute(request);
                     }
                     
-                    requestHandler.Context.CurrentRequestHandleId = requestHandler.RecoveryRequestHandler.RequestHandleId();
+                    if(!requestHandler.Context.CurrentRequestHandleId.Equals(requestHandler.RecoveryRequestHandler.RequestHandleId(), StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        requestHandler.Context.CurrentRequestHandleId = requestHandler.RecoveryRequestHandler.RequestHandleId();
+                    }
                 }
 
                 if (result == null)

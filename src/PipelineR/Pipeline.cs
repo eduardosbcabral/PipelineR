@@ -22,7 +22,7 @@ namespace PipelineR
         private IHandler<TContext, TRequest> _lastHandlerAdd;
         private bool _useReuseRequisitionHash;
         private string _requestKey;
-
+        public bool IsRecover { get; private set; }
         #region Constructores
 
         private Pipeline(IServiceProvider serviceProvider, string requestKey = null) : this()
@@ -199,7 +199,7 @@ namespace PipelineR
         #endregion
 
         #region AddRecovery
-        public Pipeline<TContext, TRequest> WithRecovery(IRecoveryHandler<TContext, TRequest> requestHandler)
+        public Pipeline<TContext, TRequest> WithRecovery(IHandler<TContext, TRequest> requestHandler)
         {
             if (this._requestHandler != null)
             {
@@ -210,9 +210,19 @@ namespace PipelineR
         }
 
         public Pipeline<TContext, TRequest> WithRecovery<TRequestHandler>(
-            Expression<Func<TContext, TRequest, bool>> condition = null, Policy policy = null)
+            Expression<Func<TContext, TRequest, bool>> condition = null, Policy policy = null) where TRequestHandler : IHandler<TContext, TRequest>
         {
-            var requestHandler = ((RecoveryHandler<TContext, TRequest>)(IRecoveryHandler<TContext, TRequest>)_serviceProvider.GetService<TRequestHandler>());
+            var requestHandler = (IHandler<TContext, TRequest>)_serviceProvider.GetService<TRequestHandler>();
+
+            requestHandler.Condition = condition ?? _lastRequestHandlerAdd.Condition;
+            requestHandler.Policy = policy ?? _lastRequestHandlerAdd.Policy;
+
+            return this.WithRecovery(requestHandler);
+        }
+
+        public Pipeline<TContext, TRequest> WithSelfRecovery(Expression<Func<TContext, TRequest, bool>> condition = null, Policy policy = null)
+        {
+            var requestHandler = _lastRequestHandlerAdd;
 
             requestHandler.Condition = condition ?? _lastRequestHandlerAdd.Condition;
             requestHandler.Policy = policy ?? _lastRequestHandlerAdd.Policy;
@@ -246,11 +256,13 @@ namespace PipelineR
             RequestHandlerResult result = null;
 
             var lastRequestHandlerId = string.Empty;
-            var nextRequestHandlerId = 
-                !string.IsNullOrEmpty(recoverFromStep) ? 
-                recoverFromStep :
-                string.Empty;
+            var nextRequestHandlerId = string.Empty; ;
 
+            if(!string.IsNullOrEmpty(recoverFromStep))
+            {
+                nextRequestHandlerId = recoverFromStep;
+                IsRecover = true;
+            }
             TContext context = null;
 
             var hash = idempotencyKey == string.Empty ? request.GenerateHash() : idempotencyKey;

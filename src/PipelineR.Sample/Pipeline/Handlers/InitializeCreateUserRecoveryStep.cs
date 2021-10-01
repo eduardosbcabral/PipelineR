@@ -6,14 +6,14 @@
         {
         }
 
-        public override void HandleRecovery(UserRequest request)
+        public override RequestHandlerResult HandleRecovery(UserRequest request)
         {
             this.Context.RecoveryWasExecuted = true;
+            return this.Next();
         }
     }
 
     public interface IInitializeCreateUserRecoveryStep : IRecoveryHandler<UserContext, UserRequest>
     {
-
     }
 }

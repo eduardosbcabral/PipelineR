@@ -22,14 +22,14 @@ namespace PipelineR
 
         public abstract void HandleRollback(TRequest request);
 
-        internal void Execute(TRequest request)
+        public RequestHandlerResult Execute(TRequest request)
         {
 
             if (this.RequestCondition != null && this.RequestCondition.IsSatisfied(this.Context, request) == false)
-                return;
+                return null;
 
             if (this.Condition != null && this.Condition.IsSatisfied(this.Context, request) == false)
-                return;
+                return null;
 
             if (this.Policy != null)
             {
@@ -43,9 +43,12 @@ namespace PipelineR
                  HandleRollback(request);
             }
 
+            return null;
         }
 
         internal void AddRollbackIndex(int rollbackIndex) => this.Index = rollbackIndex;
+
+        public string RequestHandleId() => this.GetType().Name;
 
         public void UpdateContext(TContext context)
         {
@@ -64,5 +67,7 @@ namespace PipelineR
         TContext Context { get; }
         void UpdateContext(TContext context);
         Policy Policy { get; set; }
+        RequestHandlerResult Execute(TRequest request);
+        string RequestHandleId();
     }
 }

@@ -25,7 +25,7 @@ namespace PipelineR
         #region  Properties
         public Expression<Func<TContext, TRequest, bool>> Condition { get; set; }
         public IRequestHandler<TContext, TRequest> NextRequestHandler { get; set; }
-        public IRecoveryHandler<TContext, TRequest> RecoveryRequestHandler { get; set; }
+        public IHandler<TContext, TRequest> RecoveryRequestHandler { get; set; }
         public Policy Policy { get; set; }
         public Policy<RequestHandlerResult> PolicyRequestHandler { get; set; }
 
@@ -87,6 +87,14 @@ namespace PipelineR
 
         public RequestHandlerResult Next(string requestHandlerId)
         {
+            if (string.IsNullOrEmpty(requestHandlerId) && 
+                _pipeline.IsRecover &&
+                this.RecoveryRequestHandler != null && 
+                this.RecoveryRequestHandler.RequestHandleId().Equals(this.RequestHandleId(), StringComparison.InvariantCultureIgnoreCase))
+            {
+                return null;
+            }
+
             var request = (TRequest)this.Context.Request;
 
             if (this.NextRequestHandler != null)
@@ -95,11 +103,11 @@ namespace PipelineR
             }
 
             return this.Context.Response;
-
         }
+
         public abstract RequestHandlerResult HandleRequest(TRequest request);
 
-        internal RequestHandlerResult Execute(TRequest request)
+        public RequestHandlerResult Execute(TRequest request)
         {
             _request = request;
             RequestHandlerResult result = null;
@@ -158,7 +166,6 @@ namespace PipelineR
     {
         RequestHandlerResult HandleRequest(TRequest request);
         IRequestHandler<TContext, TRequest> NextRequestHandler { get; set; }
-        string RequestHandleId();
         Policy<RequestHandlerResult> PolicyRequestHandler { set; get; }
     }
 

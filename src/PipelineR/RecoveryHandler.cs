@@ -54,7 +54,7 @@ namespace PipelineR
 
         public abstract RequestHandlerResult HandleRecovery(TRequest request);
 
-        internal RequestHandlerResult Execute(TRequest request)
+        public RequestHandlerResult Execute(TRequest request)
         {
             RequestHandlerResult result = null;
 
@@ -85,6 +85,5 @@ namespace PipelineR
     public interface IRecoveryHandler<TContext, TRequest> : IHandler<TContext, TRequest> where TContext : BaseContext
     {
         RequestHandlerResult HandleRecovery(TRequest request);
-        string RequestHandleId();
     }
 }
